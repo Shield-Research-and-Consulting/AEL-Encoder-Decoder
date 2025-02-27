@@ -13,7 +13,7 @@ sample_rate, audio_wave = wav.read("example_message.wav")
 # Detect frequencies manually
 detected_frequencies = detect_frequencies(audio_wave, sample_rate)
 
-print("Detected Frequencies:", detected_frequencies)
+# print("Detected Frequencies:", detected_frequencies)
 
 message = decode_ael_message("example_message.wav")
 print("Dekodierte Nachricht:", message)

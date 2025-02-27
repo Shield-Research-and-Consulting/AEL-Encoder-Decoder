@@ -47,30 +47,22 @@ AEL_VOCAB = {
     "FIAT": 4800,   # Fiat Currency
     "EXCH": 4900,   # Exchange Rate
 
-    # File & Communication Handling
-    "FILE": 5100,
-    "REPORT": 5200, # Report File
-    "LOG": 5300,    # Log File
-    "CONFIG": 5400, # Configuration File
-    "MSG": 5500,    # Message
-    "TEXT": 5600,   # Text File
-    "BINARY": 5700, # Binary File
-
     # System States & Status Messages
-    "STATE": 6000,
-    "BUSY": 6100,   # System Busy
-    "IDLE": 6200,   # System Idle
-    "ERROR": 6300,  # System Error
-    "SUCCESS": 6400,# Success Confirmation
-    "WARNING": 6500, # Warning State
+    "STATE": 5000,
+    "BUSY": 5100,   # System Busy
+    "IDLE": 5200,   # System Idle
+    "ERROR": 5300,  # System Error
+    "SUCCESS": 5400,# Success Confirmation
+    "WARNING": 5500, # Warning State
 
-    "WEATHER": 7500, # Weather
-    "BER": 8000,   # Berlin
-    "TMR": 8500,   # Tomorrow
+    # Weather & Location Data
+    "WEATHER": 5600, # Weather
+    "BER": 5700,   # Berlin
+    "TMR": 5800,   # Tomorrow
 }
 
-SAMPLE_RATE = 44100
-DURATION = 0.3
+SAMPLE_RATE = 48000
+DURATION = 0.5
 
 # Encoder
 def generate_tone(frequencies, duration=DURATION, sample_rate=SAMPLE_RATE):
@@ -82,13 +74,27 @@ def generate_tone(frequencies, duration=DURATION, sample_rate=SAMPLE_RATE):
     return wave / (len(frequencies) * 0.8)  # Reduces signal domination
 
 def encode_ael_message(ael_command):
-    """Encodes an AEL message into a frequency sequence."""
-    print("Encoding Parts:", ael_command.split("|"))
+    """Encodes an AEL message into a frequency sequence with support for free text (CONTENT)."""
     tones = []
+    silence = np.zeros(int(SAMPLE_RATE * 0.01))  # Short silence between tones
     for part in ael_command.split("|"):
-        freq = AEL_VOCAB.get(part, None)
-        if freq:
-            tones.append(generate_tone([freq]))
+        if part.startswith("CONTENT\"") and part.endswith("\""):
+            text = part[8:-1]  # Extract the quoted text
+            text_frequencies = []
+            for char in text:
+                freq = ord(char) * 10 + 7000
+                print(f"ENCODER: '{char}' → {freq} Hz")  # Debugging-Ausgabe
+                text_frequencies.append(freq)
+                tones.append(generate_tone(text_frequencies))
+                tones.append(silence) 
+        else:
+            freq = AEL_VOCAB.get(part, None)
+            if freq:
+                print(f"Befehl/ID '{part}' wird mit Frequenz {freq} Hz encodiert")  # Debugging-Ausgabe
+                tones.append(generate_tone([freq]))
+            else:
+                print(f"Unbekannter Befehl/ID '{part}', kann nicht encodiert werden!")  # Fehlerhinweis
+        tones.append(silence)  # Insert pause
     return np.concatenate(tones)
 
 def save_ael_message(ael_command, filename="ael_message.wav"):
@@ -100,28 +106,47 @@ def save_ael_message(ael_command, filename="ael_message.wav"):
 # Decoder
 def detect_frequencies(audio_wave, sample_rate, n_fft=1024):
     """Performs a frequency analysis and extracts dominant frequencies."""
-    f, t, Zxx = scipy.signal.stft(audio_wave, fs=sample_rate, nperseg=n_fft)
+    # f, t, Zxx = scipy.signal.stft(audio_wave, fs=sample_rate, nperseg=n_fft)
+    f, t, Zxx = scipy.signal.stft(audio_wave, fs=sample_rate, nperseg=4096)
     detected_freqs = [int(round(f[np.argmax(np.abs(Zxx[:, i]))])) for i in range(Zxx.shape[1])]
     return detected_freqs
 
 def adaptive_frequency_matching(detected_frequencies):
-    """Matches detected frequencies to the closest known AEL vocabulary term."""
+    """Matches detected frequencies to the closest known AEL vocabulary term or decodes free text."""
     reverse_map = {v: k for k, v in AEL_VOCAB.items()}
     matched_frequencies = []
-    
+
     for freq in detected_frequencies:
-        closest_freq = min(reverse_map.keys(), key=lambda f: abs(f - freq))
-        tolerance = max(10, closest_freq * 0.01)  # Adjusted to 1% tolerance
-        
-        if abs(closest_freq - freq) <= tolerance:
-            matched_frequencies.append(reverse_map[closest_freq])
+        if freq <= 1200:
+            continue  # Ignoriere Stille
+
+        if 7000 <= freq < 10000:  # **ASCII-Freitextbereich**
+            ascii_val = int(((freq + 5) - 7000) / 10)  # ASCII-Wert berechnen
+            if 32 <= ascii_val <= 126:  # Nur druckbare Zeichen zulassen
+                char = chr(ascii_val)
+                print(f"Erkannter Freitext-Buchstabe '{char}' aus Frequenz {freq} Hz, ASCII {ascii_val}")  # Debugging-Ausgabe
+            else:
+                char = "?"  # Platzhalter für ungültige Zeichen
+                print(f"Ungültige Frequenz {freq} Hz für ASCII, ersetzt durch '?'")
+            matched_frequencies.append(f"CHAR_{char}")
+        elif freq < 6000:  # **Nur Befehle unter 6000 Hz erlauben**
+            closest_freq = min(reverse_map.keys(), key=lambda f: abs(f - freq))
+            tolerance = max(30, closest_freq * 0.3)  # **Toleranz auf 3% erhöhen**
+
+            if abs(closest_freq - freq) <= tolerance:
+                print(f"Erkannter Befehl/ID '{reverse_map[closest_freq]}' aus Frequenz {freq} Hz")  # Debugging-Ausgabe
+                matched_frequencies.append(reverse_map[closest_freq])
+            else:
+                print(f"Unbekannte Frequenz {freq} Hz, kein passender Befehl gefunden!")  # Fehlerhinweis
+                matched_frequencies.append(f"UNKNOWN_{freq}")  # Debugging
         else:
-            matched_frequencies.append("UNKNOWN")
-    
+            print(f"Unbekannte hohe Frequenz {freq} Hz, ignoriert.")  # Fehlerhinweis
+            matched_frequencies.append(f"UNKNOWN_{freq}")  # Hohe Frequenzen ignorieren
+
     return matched_frequencies
 
 def decode_ael_message(audio_file):
-    """Decodes an AEL message from an audio file with duplicate filtering."""
+    """Decodes an AEL message from an audio file, supporting quoted CONTENT messages."""
     sample_rate, audio_wave = wav.read(audio_file)
     if len(audio_wave.shape) > 1:
         audio_wave = audio_wave[:, 0]
@@ -129,7 +154,33 @@ def decode_ael_message(audio_file):
     detected_frequencies = detect_frequencies(audio_wave, sample_rate)
     decoded_commands = adaptive_frequency_matching(detected_frequencies)
 
-    # **Filter out consecutive duplicate words**
-    filtered_commands = [key for key, _ in groupby(decoded_commands)]
-    
-    return "|".join(filtered_commands)
+    content_buffer = []
+    final_message = []
+    in_content = False
+
+    for cmd in decoded_commands:
+        if cmd.startswith("CHAR_"):  # Beginne Freitext
+            if not in_content:
+                in_content = True
+                final_message.append("CONTENT\"")
+            content_buffer.append(cmd.split("_")[1])  # Zeichen extrahieren
+        else:
+            if in_content:
+                final_message.append("".join(content_buffer) + "\"")  # Satz schließen
+                in_content = False
+                content_buffer = []
+            final_message.append(cmd)
+
+    if in_content:
+        final_message.append("".join(content_buffer) + "\"")
+
+    return "|".join([key for key, _ in groupby(final_message)])  # Gruppiere doppelte Einträge
+
+
+
+
+
+
+
+
+
