@@ -1,28 +1,32 @@
 # AEL Encoder & Decoder
 
-## 📌 Projektbeschreibung
-Dieses Projekt enthält eine Implementierung eines **AEL (Artificial Encoded Language) Encoder & Decoder** für akustische Signalübertragung. Es ermöglicht die Kodierung von Nachrichten in **modulierte Tonfrequenzen** und deren anschließende **Dekodierung**.
+## 📌 Project Description
+This project implements an **AEL (Artificial Encoded Language) Encoder & Decoder** for acoustic signal transmission. It enables encoding messages into **modulated sound frequencies** and subsequently **decoding** them.
 
-## 🚀 Funktionen
-- **Kodierung von AEL-Nachrichten** in Audiosignale (WAV-Format)
-- **Dekodierung** von AEL-Tonsequenzen zurück in Text
-- **Universelles Vokabular** für verschiedene Anwendungen (Steuerung, Sensorik, Security, Finanzen, AI, Kommunikation)
-- **Adaptive Frequenz-Toleranz** zur Fehlerreduktion bei der Dekodierung
-- **Redundanz-Filterung** für optimierte Signalinterpretation
+### Author Information:
 
-## 📂 Projektstruktur
+- Stefan Tannhäuser, st@shield-research-consulting.de
+
+## 🚀 Features
+- **Encodes AEL messages** into audio signals (WAV format)
+- **Decodes** AEL tone sequences back into text
+- **Universal vocabulary** for various applications (Control, Sensors, Security, Finance, AI, Communication)
+- **Adaptive frequency tolerance** to reduce decoding errors
+- **Redundancy filtering** for optimized signal interpretation
+
+## 📂 Project Structure
 ```
-├── ael_encoder_decoder.py  # Hauptmodul für Encoder & Decoder
-├── README.md               # Diese Datei mit Projektbeschreibung
-├── requirements.txt        # Benötigte Python-Bibliotheken
-├── examples/               # Beispiel-WAV-Dateien und Test-Skripte
-│   ├── example_message.wav # Beispieldatei für einen kodierten AEL-String
-│   ├── test_encoder.py     # Test für den Encoder
-│   ├── test_decoder.py     # Test für den Decoder
-├── utils/                  # Hilfsfunktionen für zukünftige Erweiterungen
-│   ├── audio_tools.py      # Werkzeuge für Audioverarbeitung
-│   ├── frequency_tools.py  # Werkzeuge für Frequenzanalyse
-└── .gitignore              # Dateien und Verzeichnisse, die nicht getrackt werden sollen
+├── ael_encoder_decoder.py  # Main module for Encoder & Decoder
+├── README.md               # This file with project documentation
+├── requirements.txt        # Required Python libraries
+├── examples/               # Example WAV files and test scripts
+│   ├── example_message.wav # Sample file for an encoded AEL string
+│   ├── test_encoder.py     # Test for the encoder
+│   ├── test_decoder.py     # Test for the decoder
+├── utils/                  # Utility functions for future expansions
+│   ├── audio_tools.py      # Tools for audio processing
+│   ├── frequency_tools.py  # Tools for frequency analysis
+└── .gitignore              # Files and directories to be ignored by Git
 ```
 
 ## 📥 Installation
@@ -30,33 +34,30 @@ Dieses Projekt enthält eine Implementierung eines **AEL (Artificial Encoded Lan
 pip install -r requirements.txt
 ```
 
-## 🔧 Nutzung
-### **1. AEL-Nachricht kodieren & als Audio speichern**
+## 🔧 Usage
+### **1. Encode an AEL message & save it as an audio file**
 ```python
 from ael_encoder_decoder import save_ael_message
 save_ael_message("REQ|WEATHER|BER|TMR", "message.wav")
 ```
 
-### **2. AEL-Nachricht aus einer Audiodatei dekodieren**
+### **2. Decode an AEL message from an audio file**
 ```python
 from ael_encoder_decoder import decode_ael_message
 message = decode_ael_message("message.wav")
 print(message)
 ```
 
-## 🎯 Anwendungsfälle
-✅ **IoT & Sensordaten** (z. B. Temperaturübertragung mit `SENSOR|TEMP|22C`)
+## 🎯 Use Cases
+✅ **IoT & Sensor Data** (e.g., transmitting temperature with `SENSOR|TEMP|22C`)
+✅ **Security & Authentication** (`SEC|AUTH|ACCESS` for access control)
+✅ **AI & Automation** (`AI|TASK|PREDICT` for machine learning models)
+✅ **Financial Transactions** (`PAY|CRYPTO|BTC` for blockchain payments)
 
-✅ **Sicherheit & Authentifizierung** (`SEC|AUTH|ACCESS` für Zugangskontrolle)
+## 🔄 Expandability
+- **Add new vocabulary**: Modify the `AEL_VOCAB` dictionary
+- **Experiment with different modulation methods**: Extend the frequency logic
 
-✅ **KI & Automatisierung** (`AI|TASK|PREDICT` für Machine Learning Modelle)
+## 📌 License
+MIT License - Open Source & for the community 🌍
 
-✅ **Finanztransaktionen** (`PAY|CRYPTO|BTC` für Blockchain-Zahlungen)
-
-
-## 🔄 Erweiterbarkeit
-- **Neues Vokabular hinzufügen**: Anpassung des `AEL_VOCAB`-Dictionaries
-- **Andere Modulationsverfahren testen**: Erweiterung der Frequenzlogik
-
-## 📌 Lizenz
-MIT License - Open Source & für die Community 🌍
